@@ -1,9 +1,9 @@
 // FileUploader.tsx
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 const FileUploader: React.FC = () => {
-  const [fileContent, setFileContent] = useState<string>('');
+  const [fileContent, setFileContent] = useState<string>("");
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -17,10 +17,19 @@ const FileUploader: React.FC = () => {
   };
 
   return (
-    <div className="p-8">
-      <input type="file" accept=".json" onChange={handleFileChange} />
-      <pre className="mt-4 p-4 border rounded">{fileContent}</pre>
-    </div>
+    <>
+      <label className="cursor-pointer rounded bg-pink-700 px-4 py-2 text-white hover:bg-blue-600">
+        Upload JSON
+        <input
+          type="file"
+          accept=".json"
+          onChange={handleFileChange}
+          className="hidden" // this hides the input
+        />
+      </label>
+
+      <pre>{fileContent}</pre>
+    </>
   );
 };
 
