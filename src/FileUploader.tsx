@@ -1,74 +1,128 @@
 import React, { useState } from "react";
-import changesets from "json-diff-ts";
+
+interface StringListData {
+  href: string;
+  value: string;
+  timestamp: string;
+}
+
+interface InstagramData {
+  title: string;
+  media_list_type: string;
+  string_list_data: StringListData[];
+}
+
+interface FollowingDataSet {
+  relationships_following: InstagramData[];
+}
+
+type FollowersDataSet = InstagramData[];
 
 const FileUploader: React.FC = () => {
-  const [following, setFollowing] = useState<string>("");
-  const [followers, setFollowers] = useState<string>("");
-  const [diffResult, setDiffResult] = useState<any[]>([]);
+  const [following, setFollowing] = useState<FollowingDataSet | null>(null);
+  const [followers, setFollowers] = useState<FollowersDataSet | null>(null);
+  const [nonFollowers, setNonFollowers] = useState<StringListData[] | null>(
+    null,
+  );
 
-  const sortByStringValue = (diffs: changesets.IChange[]) => {
-    return diffs.sort((a, b) => {
-      const aValue = a.string_list_data?.[0]?.value || "";
-      const bValue = b.string_list_data?.[0]?.value || "";
-      return aValue.localeCompare(bValue);
-    });
-  };
-
-  const handleFollowing = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileUpload(event, setFollowing);
-  };
-
-  const handleFollowers = (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileUpload(event, setFollowers);
-  };
-
-  const handleFileUpload = (
+  const handleFollowingUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
-    setter: React.Dispatch<React.SetStateAction<string>>,
   ) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
-        setter(content);
-        // Call the calculateDiff function if both files are loaded
-        calculateDiff(following, followers);
+        const data = JSON.parse(content) as FollowingDataSet;
+        setFollowing(data);
+
+        computeNonFollowers();
       };
       reader.readAsText(file);
     }
   };
 
-  const calculateDiff = (a: string, b: string) => {
-    const oldObj = JSON.parse(a);
-    const newObj = JSON.parse(b);
-    const diffs = changesets.diff(oldObj, newObj); // Step 3: Use the diff function
-    const sortedDiffs = sortByStringValue(diffs);
+  const handleFollowersUpload = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content) as FollowersDataSet;
+        setFollowers(data);
 
-    setDiffResult(diffs);
+        computeNonFollowers();
+      };
+      reader.readAsText(file);
+    }
   };
 
+  const computeNonFollowers = () => {
+    const followingArray = following?.relationships_following;
+    const followersArray = followers;
+
+    if (
+      !followingArray ||
+      !Array.isArray(followingArray) ||
+      !Array.isArray(followersArray)
+    ) {
+      return;
+    }
+    const followingUsernames = followingArray.map(
+      (item) => item.string_list_data[0]?.value,
+    );
+    const followerUsernames = followersArray.map(
+      (item) => item.string_list_data[0]?.value,
+    );
+
+    const nonFollowBack = followingUsernames.filter(
+      (username) => !followerUsernames.includes(username),
+    );
+    const nonFollowersData = nonFollowBack.map((username) => ({
+      href: `https://www.instagram.com/${username}/`,
+      value: username,
+      timestamp: new Date().toISOString(),
+    }));
+    // sort by username
+    const nonFollowersDataSorted = nonFollowersData.sort((a, b) => {
+      return a.value.localeCompare(b.value);
+    });
+    setNonFollowers(nonFollowersDataSorted);
+  };
   return (
     <>
       <div className="grid grid-cols-2">
-        <div className="col-span-1">
-          <input type="file" accept=".json" onChange={handleFollowing} />
-          <div className="h-96 w-96 overflow-scroll">
-            <pre>{following}</pre>
-          </div>
+        <div className="flex flex-col">
+          <label className="text-xl">Following</label>
+          <input
+            type="file"
+            accept="application/json"
+            onChange={handleFollowingUpload}
+          />
         </div>
-
-        <div className="col-span-1">
-          <input type="file" accept=".json" onChange={handleFollowers} />
-          <div className="h-96 w-96 overflow-scroll">
-            <pre>{followers}</pre>
-          </div>
+        <div className="flex flex-col">
+          <label className="text-xl">Followers</label>
+          <input
+            type="file"
+            accept="application/json"
+            onChange={handleFollowersUpload}
+          />
         </div>
-
         <div className="col-span-2">
-          <h2>Diff Result:</h2>
-          <div className="h-96  overflow-scroll">
-            <pre>{JSON.stringify(diffResult, null, 2)}</pre>
+          <button onClick={computeNonFollowers}>Compute Non-Followers</button>
+        </div>
+        <div className="col-span-2">
+          <h2>Users you follow that don&apos;t follow you back</h2>
+          <div className="h-96 overflow-scroll">
+            {nonFollowers?.map((user) => (
+              <div key={user.value}>
+                <a target="_blank" rel="noopener noreferrer" href={user.href}>
+                  {user.value}
+                </a>
+              </div>
+            ))}
           </div>
         </div>
       </div>
