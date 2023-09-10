@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import JSZip from "jszip";
 
 interface StringListData {
   href: string;
@@ -19,55 +20,51 @@ interface FollowingDataSet {
 type FollowersDataSet = InstagramData[];
 
 const FileUploader: React.FC = () => {
-  const [following, setFollowing] = useState<FollowingDataSet | null>(null);
-  const [followers, setFollowers] = useState<FollowersDataSet | null>(null);
   const [nonFollowers, setNonFollowers] = useState<StringListData[] | null>(
     null,
   );
 
-  const handleFollowingUpload = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        const data = JSON.parse(content) as FollowingDataSet;
-        setFollowing(data);
+  const handleZipUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const processUpload = async () => {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-        computeNonFollowers();
-      };
-      reader.readAsText(file);
-    }
+      try {
+        const zip = new JSZip();
+        const data = await zip.loadAsync(file);
+
+        const followingDataRaw =
+          await data.files["followers_and_following/following.json"].async(
+            "string",
+          );
+        const followingDataParsed = JSON.parse(
+          followingDataRaw,
+        ) as FollowingDataSet;
+
+        const followersDataRaw =
+          await data.files["followers_and_following/followers_1.json"].async(
+            "string",
+          );
+        const followersDataParsed = JSON.parse(
+          followersDataRaw,
+        ) as FollowersDataSet;
+
+        computeNonFollowersUsingData(followingDataParsed, followersDataParsed);
+      } catch (error) {
+        console.error("Failed to process zip file", error);
+      }
+    };
+    void processUpload();
   };
 
-  const handleFollowersUpload = (
-    event: React.ChangeEvent<HTMLInputElement>,
+  const computeNonFollowersUsingData = (
+    followingData: FollowingDataSet,
+    followersData: FollowersDataSet,
   ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        const data = JSON.parse(content) as FollowersDataSet;
-        setFollowers(data);
+    const followingArray = followingData.relationships_following;
+    const followersArray = followersData;
 
-        computeNonFollowers();
-      };
-      reader.readAsText(file);
-    }
-  };
-
-  const computeNonFollowers = () => {
-    const followingArray = following?.relationships_following;
-    const followersArray = followers;
-
-    if (
-      !followingArray ||
-      !Array.isArray(followingArray) ||
-      !Array.isArray(followersArray)
-    ) {
+    if (!Array.isArray(followingArray) || !Array.isArray(followersArray)) {
       return;
     }
     const followingUsernames = followingArray.map(
@@ -95,24 +92,21 @@ const FileUploader: React.FC = () => {
     <>
       <div className="grid grid-cols-2">
         <div className="flex flex-col">
-          <label className="text-xl">Following</label>
+          <label
+            htmlFor="zipUpload"
+            className="rounded-md bg-pink-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-pink-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
+          >
+            Upload zip
+          </label>
           <input
+            id="zipUpload"
             type="file"
-            accept="application/json"
-            onChange={handleFollowingUpload}
+            accept=".zip"
+            onChange={handleZipUpload}
+            className="hidden"
           />
         </div>
-        <div className="flex flex-col">
-          <label className="text-xl">Followers</label>
-          <input
-            type="file"
-            accept="application/json"
-            onChange={handleFollowersUpload}
-          />
-        </div>
-        <div className="col-span-2">
-          <button onClick={computeNonFollowers}>Compute Non-Followers</button>
-        </div>
+
         <div className="col-span-2">
           <h2>Users you follow that don&apos;t follow you back</h2>
           <div className="h-96 overflow-scroll">
