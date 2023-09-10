@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import JSZip from "jszip";
+import CardUser from "./components/CardUser";
+import { relativeTimeSince } from "./helpers/time";
 
 interface StringListData {
   href: string;
@@ -67,21 +69,21 @@ const FileUploader: React.FC = () => {
     if (!Array.isArray(followingArray) || !Array.isArray(followersArray)) {
       return;
     }
-    const followingUsernames = followingArray.map(
-      (item) => item.string_list_data[0]?.value,
-    );
+
     const followerUsernames = followersArray.map(
       (item) => item.string_list_data[0]?.value,
     );
 
-    const nonFollowBack = followingUsernames.filter(
-      (username) => !followerUsernames.includes(username),
-    );
-    const nonFollowersData = nonFollowBack.map((username) => ({
-      href: `https://www.instagram.com/${username}/`,
-      value: username,
-      timestamp: new Date().toISOString(),
-    }));
+    const nonFollowersData = followingArray
+      .filter(
+        (followedUser) =>
+          !followerUsernames.includes(followedUser.string_list_data[0]?.value),
+      )
+      .map((nonFollower) => ({
+        href: `https://www.instagram.com/${nonFollower.string_list_data[0]?.value}/`,
+        value: nonFollower.string_list_data[0]?.value,
+        timestamp: nonFollower.string_list_data[0]?.timestamp,
+      }));
     // sort by username
     const nonFollowersDataSorted = nonFollowersData.sort((a, b) => {
       return a.value.localeCompare(b.value);
@@ -111,11 +113,12 @@ const FileUploader: React.FC = () => {
           <h2>Users you follow that don&apos;t follow you back</h2>
           <div className="h-96 overflow-scroll">
             {nonFollowers?.map((user) => (
-              <div key={user.value}>
-                <a target="_blank" rel="noopener noreferrer" href={user.href}>
-                  {user.value}
-                </a>
-              </div>
+              <CardUser
+                key={user.value}
+                username={user.value}
+                date={relativeTimeSince(user.timestamp)}
+                href={user.href}
+              ></CardUser>
             ))}
           </div>
         </div>
