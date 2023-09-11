@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import CardUser from "./components/cards/CardUser";
 import { relativeTimeSince } from "./helpers/time";
 import Button from "./components/buttons/Button";
+import { FileArchive } from "lucide-react";
 
 interface StringListData {
   href: string;
@@ -121,9 +122,13 @@ const FileUploader: React.FC = () => {
 
   return (
     <>
-      <div className="grid grid-cols-6 gap-6 ">
-        <div className="col-span-6 mb-6 text-center">
-          <Button label="Upload zip" onClick={triggerFileInput} />
+      <div className="grid grid-cols-6 justify-center gap-6">
+        <div className="col-span-full flex justify-center">
+          <Button
+            icon={<FileArchive size={14} />}
+            label="Upload zip"
+            onClick={triggerFileInput}
+          />
           <input
             ref={inputFileRef}
             id="zipUpload"
@@ -133,48 +138,55 @@ const FileUploader: React.FC = () => {
             className="hidden"
           />
         </div>
-        <div className="col-span-2">
-          <h4>{nonFollowing?.length} that I don&apos;t follow back</h4>
-          <div className="h-96 space-y-6 overflow-scroll">
-            <ul role="list" className="space-y-3">
-              {nonFollowing?.map((user) => (
-                <CardUser
-                  key={user.value}
-                  username={user.value}
-                  date={relativeTimeSince(user.timestamp)}
-                  href={user.href}
-                ></CardUser>
-              ))}
-            </ul>
-          </div>
-        </div>
-        <div className="col-span-2">
-          <h4>{mutualFollowers?.length} mutual followers</h4>
-          <div className="h-96 overflow-scroll">
-            {mutualFollowers?.map((user) => (
-              <CardUser
-                key={user.value}
-                username={user.value}
-                date={relativeTimeSince(user.timestamp)}
-                href={user.href}
-              ></CardUser>
-            ))}
-          </div>
-        </div>
-
-        <div className="col-span-2">
-          <h4>{nonFollowers?.length} that don&apos;t follow me back</h4>
-          <div className="h-96 overflow-scroll">
-            {nonFollowers?.map((user) => (
-              <CardUser
-                key={user.value}
-                username={user.value}
-                date={relativeTimeSince(user.timestamp)}
-                href={user.href}
-              ></CardUser>
-            ))}
-          </div>
-        </div>
+        {nonFollowing && nonFollowers && mutualFollowers && (
+          <>
+            <div className="col-span-2">
+              <h4>{nonFollowing.length} that I don&apos;t follow back</h4>
+              <div className="h-96 space-y-6 overflow-scroll">
+                <ul role="list" className="space-y-3">
+                  {nonFollowing.map((user) => (
+                    <CardUser
+                      key={user.value}
+                      username={user.value}
+                      date={relativeTimeSince(user.timestamp)}
+                      href={user.href}
+                    ></CardUser>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="col-span-2">
+              <h4>{mutualFollowers.length} mutual followers</h4>
+              <div className="h-96  overflow-scroll">
+                <ul role="list" className="space-y-3">
+                  {mutualFollowers.map((user) => (
+                    <CardUser
+                      key={user.value}
+                      username={user.value}
+                      date={relativeTimeSince(user.timestamp)}
+                      href={user.href}
+                    ></CardUser>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="col-span-2">
+              <h4>{nonFollowers.length} that don&apos;t follow me back</h4>
+              <div className="h-96 overflow-scroll">
+                <ul role="list" className="space-y-3">
+                  {nonFollowers.map((user) => (
+                    <CardUser
+                      key={user.value}
+                      username={user.value}
+                      date={relativeTimeSince(user.timestamp)}
+                      href={user.href}
+                    ></CardUser>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );

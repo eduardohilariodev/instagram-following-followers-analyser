@@ -21,6 +21,10 @@
   h6 {
     @apply text-base;
   }
+  p {
+    @apply text-slate-400;
+  }
+
   body {
     @apply bg-gradient-to-r from-slate-900 to-slate-700 text-slate-200;
   }

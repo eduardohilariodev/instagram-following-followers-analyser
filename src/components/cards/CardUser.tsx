@@ -8,7 +8,7 @@ interface CardUserProps {
 
 const CardUser: React.FC<CardUserProps> = ({ username, date }) => {
   return (
-    <li className="overflow-hidden bg-white/10 px-4 py-4 shadow backdrop-blur-sm sm:rounded-md sm:px-6">
+    <li className="border-1 border border-white/10  bg-white/5 px-4 py-4 shadow-lg backdrop-blur-sm sm:rounded-md sm:px-6">
       <h3 className="text-base font-semibold leading-6 text-slate-300">
         {username}
       </h3>
