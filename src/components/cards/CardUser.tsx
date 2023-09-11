@@ -1,5 +1,4 @@
 import React from "react";
-import Card from "./Card";
 
 interface CardUserProps {
   username: string;
@@ -9,14 +8,12 @@ interface CardUserProps {
 
 const CardUser: React.FC<CardUserProps> = ({ username, date, href }) => {
   return (
-    <Card href={href}>
-      <h3 className="text-base font-semibold leading-6 text-gray-900">
+    <li className="overflow-hidden bg-white/10 px-4 py-4 shadow backdrop-blur-sm sm:rounded-md sm:px-6">
+      <h3 className="text-base font-semibold leading-6 text-slate-300">
         {username}
       </h3>
-      <p className="text-sm text-gray-500">
-        <a href="#">{date}</a>
-      </p>
-    </Card>
+      <p className="text-sm text-slate-500">{date}</p>
+    </li>
   );
 };
 export default CardUser;

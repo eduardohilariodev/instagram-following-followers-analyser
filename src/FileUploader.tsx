@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import JSZip from "jszip";
-import CardUser from "./components/CardUser";
+import CardUser from "./components/cards/CardUser";
 import { relativeTimeSince } from "./helpers/time";
+import Button from "./components/buttons/Button";
 
 interface StringListData {
   href: string;
@@ -22,9 +23,21 @@ interface FollowingDataSet {
 type FollowersDataSet = InstagramData[];
 
 const FileUploader: React.FC = () => {
+  const [nonFollowing, setNonFollowing] = useState<StringListData[] | null>(
+    null,
+  );
   const [nonFollowers, setNonFollowers] = useState<StringListData[] | null>(
     null,
   );
+  const [mutualFollowers, setMutualFollowers] = useState<
+    StringListData[] | null
+  >(null);
+
+  const inputFileRef = useRef<HTMLInputElement>(null);
+
+  const triggerFileInput = () => {
+    inputFileRef.current?.click();
+  };
 
   const handleZipUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const processUpload = async () => {
@@ -51,7 +64,7 @@ const FileUploader: React.FC = () => {
           followersDataRaw,
         ) as FollowersDataSet;
 
-        computeNonFollowersUsingData(followingDataParsed, followersDataParsed);
+        computeRelationships(followingDataParsed, followersDataParsed);
       } catch (error) {
         console.error("Failed to process zip file", error);
       }
@@ -59,48 +72,60 @@ const FileUploader: React.FC = () => {
     void processUpload();
   };
 
-  const computeNonFollowersUsingData = (
+  const computeRelationships = (
     followingData: FollowingDataSet,
     followersData: FollowersDataSet,
   ) => {
-    const followingArray = followingData.relationships_following;
-    const followersArray = followersData;
+    const getUsername = (item: InstagramData) =>
+      item.string_list_data[0]?.value;
 
-    if (!Array.isArray(followingArray) || !Array.isArray(followersArray)) {
-      return;
-    }
+    const followingUsernames =
+      followingData.relationships_following.map(getUsername);
+    const followersUsernames = followersData.map(getUsername);
 
-    const followerUsernames = followersArray.map(
-      (item) => item.string_list_data[0]?.value,
-    );
+    const transformToData = (user: InstagramData) => ({
+      href: `https://www.instagram.com/${getUsername(user)}/`,
+      value: getUsername(user),
+      timestamp: user.string_list_data[0]?.timestamp,
+    });
 
-    const nonFollowersData = followingArray
+    const sortAndSet = (
+      data: StringListData[],
+      setter: React.Dispatch<React.SetStateAction<StringListData[] | null>>,
+    ) => {
+      const sortedData = data.sort((a, b) => a.value.localeCompare(b.value));
+      setter(sortedData);
+    };
+
+    const nonFollowingData = followersData
+      .filter((follower) => !followingUsernames.includes(getUsername(follower)))
+      .map(transformToData);
+
+    const nonFollowersData = followingData.relationships_following
       .filter(
         (followedUser) =>
-          !followerUsernames.includes(followedUser.string_list_data[0]?.value),
+          !followersUsernames.includes(getUsername(followedUser)),
       )
-      .map((nonFollower) => ({
-        href: `https://www.instagram.com/${nonFollower.string_list_data[0]?.value}/`,
-        value: nonFollower.string_list_data[0]?.value,
-        timestamp: nonFollower.string_list_data[0]?.timestamp,
-      }));
-    // sort by username
-    const nonFollowersDataSorted = nonFollowersData.sort((a, b) => {
-      return a.value.localeCompare(b.value);
-    });
-    setNonFollowers(nonFollowersDataSorted);
+      .map(transformToData);
+
+    const mutualFollowersData = followingData.relationships_following
+      .filter((followedUser) =>
+        followersUsernames.includes(getUsername(followedUser)),
+      )
+      .map(transformToData);
+
+    sortAndSet(nonFollowingData, setNonFollowing);
+    sortAndSet(nonFollowersData, setNonFollowers);
+    sortAndSet(mutualFollowersData, setMutualFollowers);
   };
+
   return (
     <>
-      <div className="grid grid-cols-2">
-        <div className="flex flex-col">
-          <label
-            htmlFor="zipUpload"
-            className="rounded-md bg-pink-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-pink-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
-          >
-            Upload zip
-          </label>
+      <div className="grid grid-cols-6 gap-6 ">
+        <div className="col-span-6 mb-6 text-center">
+          <Button label="Upload zip" onClick={triggerFileInput} />
           <input
+            ref={inputFileRef}
             id="zipUpload"
             type="file"
             accept=".zip"
@@ -108,9 +133,37 @@ const FileUploader: React.FC = () => {
             className="hidden"
           />
         </div>
+        <div className="col-span-2">
+          <h4>{nonFollowing?.length} that I don&apos;t follow back</h4>
+          <div className="h-96 space-y-6 overflow-scroll">
+            <ul role="list" className="space-y-3">
+              {nonFollowing?.map((user) => (
+                <CardUser
+                  key={user.value}
+                  username={user.value}
+                  date={relativeTimeSince(user.timestamp)}
+                  href={user.href}
+                ></CardUser>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="col-span-2">
+          <h4>{mutualFollowers?.length} mutual followers</h4>
+          <div className="h-96 overflow-scroll">
+            {mutualFollowers?.map((user) => (
+              <CardUser
+                key={user.value}
+                username={user.value}
+                date={relativeTimeSince(user.timestamp)}
+                href={user.href}
+              ></CardUser>
+            ))}
+          </div>
+        </div>
 
         <div className="col-span-2">
-          <h2>Users you follow that don&apos;t follow you back</h2>
+          <h4>{nonFollowers?.length} that don&apos;t follow me back</h4>
           <div className="h-96 overflow-scroll">
             {nonFollowers?.map((user) => (
               <CardUser
