@@ -4,6 +4,7 @@ import CardUser from "./components/cards/CardUser";
 import { relativeTimeSince } from "./helpers/time";
 import Button from "./components/buttons/Button";
 import { FileArchive } from "lucide-react";
+import Sort from "./components/dropdowns/Sort";
 
 interface StringListData {
   href: string;
@@ -119,7 +120,6 @@ const FileUploader: React.FC = () => {
     sortAndSet(nonFollowersData, setNonFollowers);
     sortAndSet(mutualFollowersData, setMutualFollowers);
   };
-
   return (
     <>
       <div className="grid grid-cols-6 justify-center gap-6">
@@ -140,6 +140,9 @@ const FileUploader: React.FC = () => {
         </div>
         {nonFollowing && nonFollowers && mutualFollowers && (
           <>
+            <div className="col-span-full flex justify-center">
+              <Sort />
+            </div>
             <div className="col-span-2">
               <h4>{nonFollowing.length} that I don&apos;t follow back</h4>
               <div className="h-96 space-y-6 overflow-scroll">
