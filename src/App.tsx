@@ -1,5 +1,6 @@
 import React from "react";
 import FileUploader from "./FileUploader";
+import "@fontsource/space-grotesk";
 
 const App: React.FC = () => {
   return (
